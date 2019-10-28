@@ -15,27 +15,7 @@
 
 using namespace std;
 
-class histogram{
-private:
-    vector<int>hist = vector<int>(100);
-public:
-    
-        void add(int val){
-            hist[val]++;
-        }
-        void print(){
-            
-            for(int i = 0;i<hist.size();i++){
-                
-                cout<<i<<":"<<hist[i]<<" "<<endl;
 
-            }
-            cout<<endl;
-        }
-    
-};
-
- 
 
 struct worker_thread_args{
     Boundedbuffer* wpc;
@@ -53,8 +33,8 @@ struct RTArgs{
 struct STATArgs{
     Boundedbuffer* stat;
     string name;
-    int nreq;
     
+    int nreq;
 };
 
 
@@ -65,17 +45,20 @@ void* worker_thread(void* addr){
     while(true){
         // utkarsh check if var is done, quit if yes. else do regular stuff.
         
-        string var = wargs->wpc->Remove();
-        //cout<<"Value of var"<<var<<endl;
-        if(var == "done"){
+        string request = wargs->wpc->Remove();
+      // cout<<"--------------------------"<<endl;
+      // cout<<request<<endl;
+        if(request == "done"){
             wargs->chan->send_request("quit");
+            delete wargs->chan;
+         
         }else{
 
         
        
-        string reply = wargs->chan->send_request(var);
+        string reply = wargs->chan->send_request(request);
        // cout<<"Reply is "<<reply<<endl;
-        string name = var.substr(5);
+        string name = request.substr(5);
         
        wargs->mp[name]->Add(reply);
        
@@ -100,43 +83,30 @@ void *req_thread(void* addr){
 
 void* STAT_thread(void* addr){
    
- vector<int> p_hist(100);
+vector<int>p_hist(100);
     STATArgs* st_args = (STATArgs*)addr;
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    histogram hist;
     
-   for(int i = 0;i<st_args->nreq;i++){
-       string response = st_args->stat->Remove();
+    
+    string response;
+ for(int i = 0;i<st_args->nreq;i++){
+        response = st_args->stat->Remove();
        int val = atoi(response.c_str());
-       hist.add(val);
+      
+      p_hist[val]++;
    }
- 
-        
-   
-   
-   /*while(true){
-        string response = st_args->stat->Remove();
-      //cout<<"Response: "<<response<<endl;
-      //cout<<"-----------------------------"<<endl;
-      if(response == "done"){
-          break;
-      }else{
-          int val =  atoi(response.c_str());
-          //cout<<"Val "<<val<<endl;
-         hist.add(val);
-      }
-    }
-     */
-        // utkarsh check if your removed item is a done. If done break else atoi and other things
-   // cout<<"Histogram for "<<response<<endl;
-  // cout<<"--------------------------------------------------------"<<endl;
-   
-    hist.print();
-    cout<<endl;
+
+  
+
+    cout<<"histogram: "<<endl;
+ for(int i = 0;i<p_hist.size();i++){
+     cout<<i<<": "<<p_hist[i]<<endl;
+ }
+ cout<<endl;
     
-    // utkarsh print hist before quiting
+       
+   
+    
+ 
   
     return 0;
 }
@@ -145,9 +115,9 @@ void* STAT_thread(void* addr){
 
 int main(int argc, char * argv[]) {
     int c = 0;
-    int no_of_requests = 5;
-    int buff_size = 50;
-    int no_of_worker_threads = 3;
+    int no_of_requests;
+    int buff_size ;
+    int no_of_worker_threads;
     Boundedbuffer* pcb = new Boundedbuffer(buff_size);
     cout<<"-n=# -w=# -b=#"<<endl;
     while((c= getopt(argc,argv,"n:w:b:"))!=-1){
@@ -193,7 +163,7 @@ int main(int argc, char * argv[]) {
    
   
 
-    int num_req_per_th = 10;
+
    
     RTArgs r1;
     RTArgs r2;
@@ -208,9 +178,9 @@ int main(int argc, char * argv[]) {
     r2.patient_name = "Jane Smith";
     r3.patient_name = "John Smith";
     
-    r1.NReq = num_req_per_th;
-    r2.NReq =num_req_per_th;
-    r3.NReq =num_req_per_th;
+    r1.NReq = no_of_requests;
+    r2.NReq =no_of_requests;
+    r3.NReq =no_of_requests;
     //request threads
     pthread_t* p1 = new pthread_t;
     pthread_t* p2 = new pthread_t;
@@ -235,9 +205,9 @@ int main(int argc, char * argv[]) {
     
       for(int i = 0;i<3;i++){
         
-          Boundedbuffer* pcb = new Boundedbuffer(10);
-          buffer.push_back(pcb);
-          st[i].stat = pcb;
+          Boundedbuffer* b = new Boundedbuffer(10);
+           buffer.push_back(b);
+          st[i].stat = b;
         
           st[i].name = patientn[i];
           st[i].nreq = 10;
@@ -253,70 +223,67 @@ int main(int argc, char * argv[]) {
     
     worker_thread_args wt[no_of_worker_threads];
     
-    //RequestChannel* workerchan[3];
+  
     
     for(int i = 0;i<no_of_worker_threads;i++){
-        // utkarsh use the same wpc above
+       
         wt[i].wpc = pcb;
         
         string reply = ctrlchan->send_request("newthread");
-        //std::cout << "Reply is..." << reply << std::endl;
+      
        wt[i].chan = new RequestChannel(reply, RequestChannel::CLIENT_SIDE);
         for(int j = 0;j<3;j++){
             wt[i].mp[patientn[j]] = buffer[j];
         }
-        // utkarsh corrected
+       
         worker_threads[i] = new pthread_t;
         pthread_create(worker_threads[i],NULL,worker_thread,(void*)&wt[i]);
         
     }
    
-      std::cout << "Escaped for loop" << std::endl;
+
    
     
   
-    
+    //join request threads
     pthread_join(*p1, NULL);
 
     pthread_join(*p2, NULL);
     pthread_join(*p3, NULL);
     pcb->Add("done");
-    cout<<"Killing worker thread"<<endl;
-    // utkarsh to kill, send a done message and handle done messages in the worker thread
-
-    for(int i = 1;i<no_of_worker_threads;i++){
+ 
+   
+    for(int i = 0;i<no_of_worker_threads;i++){
         pthread_join(*worker_threads[i], NULL);
-        wt[i].wpc->Add("done");
+
 
     }
     pcb->Add("done");
     
-    // utkarsh kill stats thread by sending a done signal to all the stats buffers.
-
+  
     for(int i = 0;i<3;i++){
         pthread_join(*stat_thread[i],NULL);
        
     }
-    for(int i = 0;i<3;i++){
-        st[i].stat->Add("done");
-    }
-   pcb->Add("done");
+ 
+ 
     
   for(int i = 0;i<no_of_worker_threads;i++){
-              string reply = wt[i].chan->send_request("quit");
+              
       delete wt[i].chan;
+      
+      
       
           }
         
-         // delete wt;
        
     
     ctrlchan->send_request("quit");
-    for(int i = 0;i<buffer.size();i++){
-        delete buffer[i];
-    }
-    
     delete ctrlchan;
+    delete pcb;
+
+  
+    
     
    
     
