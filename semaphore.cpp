@@ -1,3 +1,11 @@
+//
+//  semaphore.cpp
+//  MP2
+//
+//  Created by Rimsha Maredia on 10/5/19.
+//  Copyright © 2019 Rimsha Maredia. All rights reserved.
+//
+
 #include "semaphore.hpp"
 #include "mutex.hpp"
 Semaphore::Semaphore(int _val){
@@ -17,28 +25,30 @@ Semaphore::~Semaphore(){
 int Semaphore::P(){
    
     pthread_mutex_lock(&m);
-    value--;
-    if(value<0){
+     value--;
+    while(value<0){
         pthread_cond_wait(&c,&m);
         
     }
-    
+   
     pthread_mutex_unlock(&m);
     
-   
+    
     return 1;
     
 }
 int Semaphore::V(){
-    
+    value++;
     pthread_mutex_lock(&m);
-     value++;
-    if(value<=0){
+    if(value==0){
         pthread_cond_signal(&c);
         
     }
-   
+
     pthread_mutex_unlock(&m);
-    
-    return 1;
+   
+    return 1 ;
 }
+    
+
+

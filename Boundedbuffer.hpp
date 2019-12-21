@@ -1,5 +1,7 @@
 #ifndef Boundedbuffer_hpp
 #define Boundedbuffer_hpp
+
+#include "mutex.hpp"
 #include<string>
 
 #include <stdio.h>
@@ -11,12 +13,12 @@ private:
     int n;
     Semaphore empty;
     Semaphore full;
-    Semaphore mutex;
+    Mutex mutex;
     std::queue<std::string> q;
    
     
 public:
-    Boundedbuffer(int N):empty(N),full(0),mutex(1){
+    Boundedbuffer(int N):empty(N),full(0),mutex(){
       
        n=N;
     };
@@ -26,10 +28,10 @@ public:
   
     void Add(std::string item){
         empty.P();
-        mutex.P();
+        mutex.Lock();
         q.push(item);
         n++;
-        mutex.V();
+        mutex.Unlock();
         full.V();
      
     }
@@ -37,7 +39,7 @@ public:
     
     std::string Remove(){
         full.P();
-        mutex.P();
+        mutex.Lock();
         if (q.empty()) {
             std::cout << n << std::endl;
             std::cout << "EMPTY" << std::endl;
@@ -46,7 +48,7 @@ public:
       std::string response =  q.front();
         q.pop();
         n--;
-        mutex.V();
+        mutex.Unlock();
         empty.V();
         return response;
         

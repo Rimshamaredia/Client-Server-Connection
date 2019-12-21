@@ -1,12 +1,12 @@
-/* 
-    File: semaphore.hpp
-
-    Author: R. Bettati
-            Department of Computer Science
-            Texas A&M University
-    Date  : 08/02/11
-
-*/
+/*
+ File: semaphore.hpp
+ 
+ Author: R. Bettati
+ Department of Computer Science
+ Texas A&M University
+ Date  : 08/02/11
+ 
+ */
 
 #ifndef _semaphore_H_                   // include file only once
 #define _semaphore_H_
@@ -24,13 +24,13 @@
 #include <pthread.h>
 
 /*--------------------------------------------------------------------------*/
-/* DATA STRUCTURES */ 
+/* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
-/* FORWARDS */ 
+/* FORWARDS */
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -64,5 +64,6 @@ class Semaphore {
 
 
 #endif
+
 
 
